@@ -54,8 +54,13 @@ inquirer.prompt([
 
                     if (res[0].stock_quantity >= inputUnits) {
                         var newStock = res[0].stock_quantity - inputUnits;
-                        connection.query("UPDATE products SET ? WHERE ?", [{ stock_quantity: newStock}, { item_id: inputID}], function (err, res) { })
-                        console.log("Total cost: " + res[0].price * inputUnits);
+                        var newPrice = res[0].price * inputUnits;
+                        var productSales = newPrice + res[0].product_sales;
+                        connection.query("UPDATE products SET ? WHERE ?", [{ stock_quantity: newStock, product_sales: productSales}, { item_id: inputID}], function (err, res) { })
+                        connection.query("SELECT products.department_name, departments.total_sales, products.item_id FROM products INNER JOIN departments ON products.department_name=departments.department_name WHERE products.department_name = ? AND products.item_id = ?", [res[0].department_name, inputID], function (err, res) { 
+                            connection.query("UPDATE products SET ? WHERE ?", [{ total_sales: res[0].total_sales}, { department_name: res[0].department_name}], function (err, res) { })
+                        })
+                        console.log("Total cost: " + newPrice);
                     } else {
                         console.log("Insufficient quantity!");
                     }
